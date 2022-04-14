@@ -1,5 +1,5 @@
 
-directorio = 'C:/Users/julio/PycharmProjects/SeleniumToltec/'
+directorio = 'C:/Users/julio/PycharmProjects/SeleniumToltec'
 
 import random
 import time
@@ -49,7 +49,7 @@ def RealtorJS(df, estrategia, precioMeta, lugar, Ciudad, criterio, mes):
         props = driver.find_elements_by_xpath('//li[@data-testid="result-card"]')
         # Procedimiento para obtener información
         for prop in props:
-            if estrategia == "SOLD":
+            if estrategia == "Sold":
                 estatus = prop.find_element_by_xpath('.//span[@class="jsx-3853574337 statusText"]').text.replace(
                     'Sold - ', "")
                 estatus1 = 'Sold'
@@ -224,7 +224,10 @@ def Realtor(df, estrategia, precioMeta, lugar, Ciudad, criterio):
                 df = pd.concat([df, new_df], ignore_index=True)
                 dirección = prop.find_element_by_xpath('.//div[@data-label="pc-address"]').text.replace('\n', " ")
                 enlace = prop.find_element_by_xpath('.//a[@rel="noopener"]').get_attribute('href')
-                df.loc[contador + filasActuales, "ZIP"] = int(dirección[dirección.find(Ciudad) + 3:len(dirección)])
+                try:
+                    df.loc[contador + filasActuales, "ZIP"] = int(dirección[dirección.find(Ciudad) + 3:len(dirección)])
+                except ValueError:
+                    df.loc[contador + filasActuales, "ZIP"] = 'Ingresar Manualmente'
                 df.loc[contador + filasActuales, "CITY"] = dirección[dirección.find(",") + 2:dirección.find("TX") + 2]
                 df.loc[contador + filasActuales, "SOLD"] = estatus
                 df.loc[contador + filasActuales, "PROPERTY ADDRESS"] = dirección
@@ -505,9 +508,18 @@ def BrokersInfo(df, initialRows):
                    "International Realtor", "'s"]
 
     for i in range(newRowsAdded):
-        driver = webdriver.Chrome('chromedriver.exe')
-        tarjeta = driver.find_elements_by_xpath('//div[@class="provider"]')
-        driver.get(df.loc[i + filasActuales, 'LINK'])
+        try:
+            driver = webdriver.Firefox()
+            driver.get('http://www.google.com')
+            time.sleep(2)
+            #tarjeta = driver.find_elements_by_xpath('//div[@class="provider"]')
+            driver.get(df.loc[i + filasActuales, 'LINK'])
+        except:
+            driver = webdriver.Chrome()
+            driver.get('http://www.google.com')
+            time.sleep(2)
+            # tarjeta = driver.find_elements_by_xpath('//div[@class="provider"]')
+            driver.get(df.loc[i + filasActuales, 'LINK'])
         print(i + filasActuales, df.loc[i + filasActuales, 'LINK'])
         tarjeta = driver.find_elements_by_xpath('//div[@class="provider"]')
         #################3
@@ -557,7 +569,7 @@ def BrokersInfo(df, initialRows):
 
         print(f'Propiedades faltantes: {newRowsAdded - i}')
 
-    driver.close()
+        driver.close()
 
     del tarjeta
     del agente
@@ -763,7 +775,7 @@ lugar= input("ZIP o Zona de su interés: ") #78738
 Ciudad=input("Ciudad de su interés (TX, CA): ")
 criterio = input("Tipo de búsqueda (Brokers, Owners): ")
 lugar=f'{lugar.replace(" ","-")}_{Ciudad}'
-if estrategia == 'SOLD':
+if estrategia == 'Sold':
     lugar=lugar+'/show-recently-sold'
     mes = input('mes: ')
 
@@ -813,6 +825,7 @@ if Ciudad == 'CA':
             ############Fin de fnuciones a llamar############
             archivo = f"{directorio}/{Ciudad}.xlsx"
             nombre_nuevo = f"{directorio}/{Ciudad} Brokers.xlsx"
+            os.remove(nombre_nuevo)
             os.rename(archivo, nombre_nuevo)
 
             eliminar = busca(f'title = "{Ciudad} Brokers.xlsx"')[0]
@@ -851,6 +864,7 @@ if Ciudad == 'CA':
             ##########Fin de funciones a llamar#######
             archivo = f"{directorio}/{Ciudad}.xlsx"
             nombre_nuevo = f"{directorio}/{Ciudad} Owners.xlsx"
+            os.remove(nombre_nuevo)
             os.rename(archivo, nombre_nuevo)
 
             eliminar = busca(f'title = "{Ciudad} Owners.xlsx"')[0]
@@ -891,6 +905,7 @@ if Ciudad == 'CA':
         ############Fin de fnuciones a llamar############
         archivo = f"{directorio}/{Ciudad}.xlsx"
         nombre_nuevo = f"{directorio}/{Ciudad} Just Sold.xlsx"
+        os.remove(nombre_nuevo)
         os.rename(archivo, nombre_nuevo)
 
         eliminar = busca(f'title = "{Ciudad} Just Sold.xlsx"')[0]
@@ -933,6 +948,7 @@ if Ciudad == 'TX':
                 ############Fin de fnuciones a llamar############
                 archivo = f"{directorio}/{Ciudad}.xlsx"
                 nombre_nuevo = f"{directorio}/{Ciudad} Brokers.xlsx"
+                os.remove(nombre_nuevo)
                 os.rename(archivo, nombre_nuevo)
 
                 eliminar = busca(f'title = "{Ciudad} Brokers.xlsx"')[0]
@@ -973,6 +989,7 @@ if Ciudad == 'TX':
             ##########Fin de funciones a llamar#######
             archivo = f"{directorio}/{Ciudad}.xlsx"
             nombre_nuevo = f"{directorio}/{Ciudad} Owners.xlsx"
+            os.remove(nombre_nuevo)
             os.rename(archivo, nombre_nuevo)
 
             eliminar = busca(f'title = "{Ciudad} Owners.xlsx"')[0]
@@ -983,7 +1000,7 @@ if Ciudad == 'TX':
 
             print("El archivo se ha actualizado exitosamente en GD")
 
-    if estrategia == 'SOLD':
+    if estrategia == 'Sold':
         id_folder = '1t1ZFKbtEoYbYrhEqqJYroIV5wJRYIwx2'
 
         print('Realizando procesos ______________________')
@@ -1015,6 +1032,7 @@ if Ciudad == 'TX':
         ############Fin de fnuciones a llamar############
         archivo = f"{directorio}/{Ciudad}.xlsx"
         nombre_nuevo = f"{directorio}/{Ciudad} Just Sold.xlsx"
+        os.remove(nombre_nuevo)
         os.rename(archivo, nombre_nuevo)
 
         eliminar = busca(f'title = "{Ciudad} Just Sold.xlsx"')[0]
