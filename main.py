@@ -1,14 +1,14 @@
-
 directorio = 'C:/Users/julio/PycharmProjects/SeleniumToltec'
 
 import random
 import time
-from datetime import datetime
+from datetime import date
 from timeit import default_timer as timer
 
 import numpy as np
 import pandas as pd
 from selenium.common.exceptions import NoSuchElementException
+
 from selenium.webdriver import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 
@@ -25,7 +25,7 @@ from selenium.webdriver.support import expected_conditions as EC
 
 
 def RealtorJS(df, estrategia, precioMeta, lugar, Ciudad, criterio, mes):
-    driver=webdriver.Chrome('chromedriver.exe')
+    driver = webdriver.Chrome('chromedriver.exe')
     driver.get(f'https://www.realtor.com/realestateandhomes-search/{lugar}')
     paginas = driver.find_elements_by_xpath('//a[@class="item btn "]')
 
@@ -132,13 +132,13 @@ def BrokersInfoJS(df, initialRows):
 
     for i in range(newRowsAdded):
         if cuentale == stopper:
-            driver=webdriver.Chrome('chromedriver.exe')
+            driver = webdriver.Chrome('chromedriver.exe')
             driver.get('https://www.google.com/')
             stopper = random.randrange(10, 30, 1)
             time.sleep(10)
             cuentale = 0
         else:
-            driver=webdriver.Chrome('chromedriver.exe')
+            driver = webdriver.Chrome('chromedriver.exe')
             driver.get(df.loc[i + filasActuales, 'LINK'])
             print("# Registro: ", i + filasActuales, "Enlace: ", df.loc[i + filasActuales, 'LINK'])
             time.sleep(10)
@@ -191,7 +191,7 @@ def Realtor(df, estrategia, precioMeta, lugar, Ciudad, criterio):
     vaciosRow = vacios.tolist()
     new_df = pd.DataFrame([vaciosRow], columns=cols)
 
-    driver=webdriver.Chrome('chromedriver.exe')
+    driver = webdriver.Firefox()
     driver.get(f'https://www.realtor.com/realestateandhomes-search/{lugar}')
     paginas = driver.find_elements_by_xpath('//a[@class="item btn "]')
 
@@ -278,7 +278,7 @@ def EstatedOwnerInfo(df, initialRows):
 
     em = 'bmendia@toltec-capital.com'
     contra = '#Toltec2018'
-    driver=webdriver.Chrome('chromedriver.exe')
+    driver = webdriver.Chrome('chromedriver.exe')
     driver.get('https://estated.com/login')
     driver.maximize_window()
 
@@ -384,7 +384,7 @@ def LicenciasTX(df, initialRows):
 
     print('Buscando información de los brokers')
 
-    driver=webdriver.Chrome('chromedriver.exe')
+    driver = webdriver.Chrome('chromedriver.exe')
     for m in range(newRowsAdded):
         if m == 1:
             espera = 30
@@ -457,8 +457,8 @@ def LicenciasTX(df, initialRows):
         df.loc[m + filasActuales, "PHONE"] = phone
         # Encontrando la dirección del agente
         brokerAddress = \
-        driver.find_elements_by_xpath('//div[@class="field-fluid col-xs-12 col-sm-12 col-md-12 col-lg-12"]')[
-            0].text.replace("\n", " ").replace('Business Address ', "")
+            driver.find_elements_by_xpath('//div[@class="field-fluid col-xs-12 col-sm-12 col-md-12 col-lg-12"]')[
+                0].text.replace("\n", " ").replace('Business Address ', "")
         df.loc[m + filasActuales, "BROKER ADDRESS"] = brokerAddress
         # Encontrando los años de experiencia
         lastDate = int('20' + driver.find_element_by_xpath(
@@ -512,7 +512,7 @@ def BrokersInfo(df, initialRows):
             driver = webdriver.Firefox()
             driver.get('http://www.google.com')
             time.sleep(2)
-            #tarjeta = driver.find_elements_by_xpath('//div[@class="provider"]')
+            # tarjeta = driver.find_elements_by_xpath('//div[@class="provider"]')
             driver.get(df.loc[i + filasActuales, 'LINK'])
         except:
             driver = webdriver.Chrome()
@@ -521,6 +521,24 @@ def BrokersInfo(df, initialRows):
             # tarjeta = driver.find_elements_by_xpath('//div[@class="provider"]')
             driver.get(df.loc[i + filasActuales, 'LINK'])
         print(i + filasActuales, df.loc[i + filasActuales, 'LINK'])
+        try:
+            bot = driver.find_element('/html/body/div/div[1]/h1').text
+            if bot == 'Pardon Our Interruption...':
+                driver.close()
+                df[df['DRE #'] == 'Buscar ID aparte'] = 'Reprocesar'
+                break
+        except:
+            print('...')
+
+        try:
+            yaVendido = driver.find_element_by_xpath('//*[@id="label-sold"]').text
+            if yaVendido == 'Sold':
+                df.loc[i + filasActuales, "SOLD"] = 'Sold'
+                print('Sold')
+                continue
+        except:
+            print('en pending')
+
         tarjeta = driver.find_elements_by_xpath('//div[@class="provider"]')
         #################3
         if len(tarjeta) != 0:
@@ -541,8 +559,10 @@ def BrokersInfo(df, initialRows):
                     agente = agente.upper().replace(exc, "")
                 df.loc[i + filasActuales, 'BROKER'] = agente
             else:
-                for exc in excepciones:
-                    agente = agente.upper().replace(exc, "")
+                df.loc[i + filasActuales, 'BROKER'] = 'Buscar manualmente'
+
+            for exc in excepciones:
+                agente = agente.upper().replace(exc, "")
                 df.loc[i + filasActuales, 'BROKER'] = agente
 
             try:
@@ -551,18 +571,32 @@ def BrokersInfo(df, initialRows):
                 broker = tarjeta[1].find_element_by_xpath('.//span').text
                 df.loc[i + filasActuales, 'COMPANY'] = broker
             else:
-                df.loc[i + filasActuales, 'COMPANY'] = broker
+                df.loc[i + filasActuales, 'COMPANY'] = 'Buscar manualmente'
+
+            try:
+                phone = driver.find_element_by_xpath(
+                    '/html/body/div[1]/div[2]/div/div[4]/div/div/div/div/div/div[1]/div[2]/ul/li[3]').text
+                df.loc[i + filasActuales, 'PHONE'] = phone
+            except NoSuchElementException:
+                phone = 'Buscar aparte'
+                df.loc[i + filasActuales, 'PHONE'] = phone
         else:
             tarjeta2 = driver.find_elements_by_xpath('//span[@class="rdc-ldp-5or6gw dmbdaG"]')
             agente = tarjeta2[0].text.replace('Listed by ', "")
             for exc in excepciones:
                 agente = agente.upper().replace(exc, "")
-            df.loc[i + filasActuales, 'BROKER'] = agente
-            broker = tarjeta2[1].text.replace('with ', "")
-            df.loc[i + filasActuales, 'COMPANY'] = broker
-            licencia = 'Buscar ID aparte'
-            df.loc[i + filasActuales, 'DRE #'] = licencia
+            try:
+                df.loc[i + filasActuales, 'BROKER'] = agente
+                broker = tarjeta2[1].text.replace('with ', "")
+                df.loc[i + filasActuales, 'COMPANY'] = broker
+                licencia = 'Buscar ID aparte'
+                df.loc[i + filasActuales, 'DRE #'] = licencia
+            except:
+                df.loc[i + filasActuales, 'BROKER'] = 'Buscar manualmente'
+                df.loc[i + filasActuales, 'COMPANY'] = 'Buscar manualmente'
+                df.loc[i + filasActuales, 'DRE #'] = 'Buscar manualmente'
 
+        print(f'Broker: {agente}, DRE # : {licencia}, Company: {broker}, Phone: {phone}')
         escritor = pd.ExcelWriter(f'./{Ciudad}.xlsx', engine='xlsxwriter')
         df.to_excel(escritor, sheet_name='Prueba', index=False)
         escritor.save()
@@ -578,8 +612,119 @@ def BrokersInfo(df, initialRows):
 
     return df
 
+
 ###############################################################################################################################
 
+def DRE_CA(df):
+    errorDRE = df[df['DRE #'] == 'Buscar ID aparte']
+    listaError = list(errorDRE.index)
+
+    driver = webdriver.Chrome('chromedriver.exe')
+    driver.get(f'https://www.mlslistings.com/FindAnAgent')
+
+    for error in listaError:
+        driver.find_element(By.NAME, "searchText").click()
+        driver.find_element(By.NAME, "searchText").send_keys(df['BROKER'].iloc[error])
+        driver.find_element(By.NAME, "searchText").send_keys(Keys.ENTER)
+        time.sleep(7)
+        decision = int(driver.find_element_by_xpath('//*[@id="searchResultsHeader"]').text.split()[3])
+        if decision == 0:
+            driver.get(f'https://www.mlslistings.com/FindAnAgent')
+            licencia = 'Buscar manualmente'
+            continue
+        elif decision <= 2:
+            licencia = int(driver.find_element_by_xpath(
+                '/html/body/div[1]/div[2]/div/div/div[1]/div/div[2]/div/div[2]/div[1]/div[2]/p[1]').text.replace(
+                'License #: ', ''))
+        else:
+            licencia = 'Buscar manualmente'
+
+        df['DRE #'].iloc[error] = licencia
+        driver.get(f'https://www.mlslistings.com/FindAnAgent')
+
+    driver.close()
+
+    escritor = pd.ExcelWriter(f'./{Ciudad}.xlsx', engine='xlsxwriter')
+    df.to_excel(escritor, sheet_name='Prueba', index=False)
+    escritor.save()
+
+    return df
+
+
+######################################################################################################################
+
+def licenciasCA(df, initialRows):
+    finalRows = df.shape[0]
+    filasActuales = initialRows
+    print(f'finalRows: {finalRows}')
+    newRowsAdded = finalRows - initialRows
+    print(f'newRowsAdded: {newRowsAdded}')
+    del finalRows
+
+    print('Buscando información de los brokers')
+    driver = webdriver.Chrome('chromedriver.exe')
+
+    for m in range(newRowsAdded):
+        espera = 5
+        driver.get(f'https://www2.dre.ca.gov/PublicASP/pplinfo.asp?start=1')
+        inputDre = df.loc[m + filasActuales, "DRE #"]
+        driver.find_element(By.NAME, "LICENSE_ID").click()
+        driver.find_element(By.NAME, "LICENSE_ID").send_keys(inputDre)
+        driver.find_element(By.CSS_SELECTOR, "tr:nth-child(6) input:nth-child(1)").click()
+
+        time.sleep(5)
+        try:
+            tipoLicencia = driver.find_element_by_xpath('/html/body/font/table/tbody/tr[1]/td[2]/font').text
+            df.loc[m + filasActuales, 'TYPE OF LICENSE'] = tipoLicencia
+            direccionBroker = driver.find_element_by_xpath('/html/body/font/table/tbody/tr[3]/td[2]/font').text
+            df.loc[m + filasActuales, "BROKER ADDRESS"] = direccionBroker
+            if tipoLicencia == 'OFFICER':
+                print('saltar')
+                continue
+            elif tipoLicencia == 'CORPORATION':
+                print('saltar')
+                continue
+            else:
+                try:
+                    lastDate = int(
+                        '20' + driver.find_element_by_xpath('/html/body/font/table/tbody/tr[7]/td[2]/font').text[6:8])
+                    fecha = datetime.now().year
+                    if lastDate > fecha:
+                        lastDate = lastDate - 100
+                    experiencia =  fecha - lastDate
+                    df.loc[m + filasActuales, "YEARS OF EXPERIENCE"] = experiencia
+                    time.sleep(2)
+                except:
+                    lastDate = int(
+                        '20' + driver.find_element_by_xpath('/html/body/font/table/tbody/tr[8]/td[2]/font').text[6:8])
+                    fecha = datetime.now().year
+                    if lastDate > fecha:
+                        lastDate = lastDate - 100
+                    experiencia = fecha - lastDate
+                    df.loc[m + filasActuales, "YEARS OF EXPERIENCE"] =  experiencia
+                    time.sleep(2)
+            print(
+                f'Tipo de licencia: {tipoLicencia}, Dirección: {direccionBroker}, Años de experiencia: {experiencia}')
+            print(f'Faltan {newRowsAdded - m} registros')
+
+
+        except NoSuchElementException:
+            df.loc[m + filasActuales, 'COMMENT'] = 'Buscar manualmente'
+            print(df.loc[m + filasActuales, 'COMMENT'])
+            continue
+
+        escritor = pd.ExcelWriter(f'./{Ciudad}.xlsx', engine='xlsxwriter')
+        df.to_excel(escritor, sheet_name='Prueba', index=False)
+        escritor.save()
+
+
+    driver.close()
+
+    print('Terminó la búsqueda de brokers')
+
+    return df
+
+#######################################################################################################################
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 
@@ -766,17 +911,16 @@ def eliminar_permisos(id_drive, permission_id=None, email=None):
                     file1.DeletePermission(permiso['id'])
 
 
-
 print("Por favor ingrese los siguientes parámetros")
-estrategia= input('Indique el tipo de estrategia (Pending, Sold): ')
-precioMeta= input("Precio mínimo de las propiedades que busca: ")
-precioMeta=int(precioMeta)
-lugar= input("ZIP o Zona de su interés: ") #78738
-Ciudad=input("Ciudad de su interés (TX, CA): ")
+estrategia = input('Indique el tipo de estrategia (Pending, Sold): ')
+precioMeta = input("Precio mínimo de las propiedades que busca: ")
+precioMeta = int(precioMeta)
+lugar = input("ZIP o Zona de su interés: ")  # 78738
+Ciudad = input("Ciudad de su interés (TX, CA): ")
 criterio = input("Tipo de búsqueda (Brokers, Owners): ")
-lugar=f'{lugar.replace(" ","-")}_{Ciudad}'
+lugar = f'{lugar.replace(" ", "-")}_{Ciudad}'
 if estrategia == 'Sold':
-    lugar=lugar+'/show-recently-sold'
+    lugar = lugar + '/show-recently-sold'
     mes = input('mes: ')
 
 import os
@@ -820,7 +964,9 @@ if Ciudad == 'CA':
             #############Funciones a llamar##################
             ResultadosRealtor = Realtor(df, estrategia, precioMeta, lugar, Ciudad, criterio)
             ResultadosBrokerInfo = BrokersInfo(ResultadosRealtor, initialRows)
-            ###agregar el módulo de las licencias de California
+            # ResultadosDRE_CA = DRE_CA(ResultadosBrokerInfo)
+            # ResultadosLicenciasCA = licenciasCA(ResultadosDRE_CA,initialRows)
+            ResultadosLicenciasCA = licenciasCA(ResultadosBrokerInfo, initialRows)
             ResultadosBrokerInfo
             ############Fin de fnuciones a llamar############
             archivo = f"{directorio}/{Ciudad}.xlsx"
@@ -1028,7 +1174,7 @@ if Ciudad == 'TX':
         # ResuladoBrokersInfoJS = BrokersInfoJS(ResultadosRealtorJS ,initialRows) ##Sólo una vez que se haya incorporado el elemento 'Type of Property'
         ResultadosEstated = EstatedOwnerInfo(ResultadosRealtorJS,
                                              initialRows, )  ## Hacer el cambio de ResultadosRealtorJS  a ResuladoBrokersInfoJS cuando se agregue la variable 'Type of Property'
-        ResultadosEStated
+        ResultadosEstated
         ############Fin de fnuciones a llamar############
         archivo = f"{directorio}/{Ciudad}.xlsx"
         nombre_nuevo = f"{directorio}/{Ciudad} Just Sold.xlsx"
